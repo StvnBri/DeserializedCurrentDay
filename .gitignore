@@ -1,0 +1,28 @@
+	# Build outputs
+	bin/
+	obj/
+	
+	# Visual Studio files
+	.vs/
+	*.suo
+	*.user
+	*.userosscache
+	*.sln.docstates
+	
+	# NuGet packages
+	packages/
+	*.nupkg
+	
+	# Database local files
+	*.mdf
+	*.ldf
+	*.ide-shm
+	*.ide-wal
+	
+	# Publish/Deploy
+	publish/
+	*.pubxml
+	
+	# Other temp files
+	*.tmp
+	*.log
