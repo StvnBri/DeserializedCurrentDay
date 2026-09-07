@@ -1,4 +1,9 @@
-﻿Imports MongoDB.Bson
+﻿'-----------------------------------
+' UAT Prescription
+'----------------------------
+
+
+Imports MongoDB.Bson
 Imports MongoDB.Driver
 Imports Newtonsoft
 Imports Newtonsoft.Json
@@ -36,11 +41,98 @@ Public Class frmmain
     Public FilterField2 As String
     Public FilterField3 As String
     Dim customdate As Date
-    Private Sub frmmain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Get_MongDB_Credentials()
-        Get_Source_Target()
-        End
+
+    ' Variables for Timer
+    Private etlTimer As Stopwatch
+    Private breakSecondsRemaining As Integer = 0
+    Private Const BREAK_DURATION As Integer = 300000 ' 5 minutes (in seconds)
+    Private isRunning As Boolean = False
+    Private nextRunTime As DateTime
+
+
+    'runtime timer
+    Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
+        If etlTimer IsNot Nothing AndAlso etlTimer.IsRunning Then
+            Lbl_runtime_stopwatch.Text = etlTimer.Elapsed.ToString("hh\:mm\:ss")
+        End If
     End Sub
+
+    Private Sub Timer2_Tick(sender As Object, e As EventArgs) Handles Timer2.Tick
+
+        Dim remaining As TimeSpan = nextRunTime - DateTime.Now
+
+        If remaining.TotalSeconds > 0 Then
+            Lbl_break_stopwatch.Text = remaining.ToString("mm\:ss")
+        Else
+            Timer2.Stop()
+
+            Lbl_break_stopwatch.Text = "00:00"
+            Lbl_status.Text = "Starting ETL..."
+
+            isRunning = False
+            RunETL() '  restart
+        End If
+
+    End Sub
+    Private Async Sub RunETL()
+
+        If isRunning Then Exit Sub
+
+        isRunning = True
+
+        Try
+            ' RESET UI
+            Lbl_break_stopwatch.Text = "00:00"
+            Lbl_status.Text = "Processing..."
+
+            ' START runtime
+            etlTimer = Stopwatch.StartNew()
+            Timer1.Start()
+
+            ' RUN ETL in background
+            Await Task.Run(Sub()
+                               Get_MongDB_Credentials()
+                               Get_Source_Target()
+                           End Sub)
+
+            ' STOP runtime
+            etlTimer.Stop()
+            Timer1.Stop()
+
+            Lbl_runtime_stopwatch.Text = etlTimer.Elapsed.ToString("hh\:mm\:ss")
+
+            ' START BREAK
+            Lbl_status.Text = "Break..."
+            nextRunTime = DateTime.Now.AddMinutes(15)
+            'breakSecondsRemaining = BREAK_DURATION
+            Timer2.Start()
+
+        Catch ex As Exception
+
+            Timer1.Stop()
+            If etlTimer IsNot Nothing Then etlTimer.Stop()
+
+            Lbl_status.Text = "Error"
+            isRunning = False
+
+            MsgBox(ex.Message)
+
+        End Try
+
+    End Sub
+
+
+    Private Sub frmdeserialized_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        StartLog("DATA MIGRATION", "START", 1)
+        RunETL()
+    End Sub
+
+
+    'Private Sub frmmain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    '    Get_MongDB_Credentials()
+    '    Get_Source_Target()
+    '    End
+    'End Sub
     Public Sub Get_MongDB_Credentials()
         objconnectionautohrdw.Open()
         SQLCommand = New Data.SqlClient.SqlCommand("sproc_get_arcusair_uat_credentials", objconnectionautohrdw)
@@ -55,10 +147,13 @@ Public Class frmmain
         objconnectionautohrdw.Close()
     End Sub
     Public Sub Get_Source_Target()
+
+        etlTimer = Stopwatch.StartNew()
+
         Try
             'customdate = InputBox("enterdate mm/dd/yyyy")
             ' customdate = Now.AddDays(-1).ToShortDateString
-            'customdate = Now.ToShortDateString
+            ' customdate = Now.ToShortDateString
             customdate = "01/01/2000" ' For Testing only.
             objconnectionautohrdwLoop.Open()
             SQLCommandLoop = New Data.SqlClient.SqlCommand("sproc_get_ArcusAir_Reference_Target_Transactional_CurrentDay", objconnectionautohrdwLoop)
@@ -89,9 +184,30 @@ Public Class frmmain
             Loop
             Execute_Array_Metadata_Phase()
             objconnectionautohrdwLoop.Close()
+
+            ' New
+            load_prescription()
+
+            etlTimer.Stop()
+
+            Dim totalTime As String = etlTimer.Elapsed.ToString("hh\:mm\:ss")
+
+            StartLog("ETL_RUNTIME", "Total Runtime: " & totalTime, 0)
+
+            Return
+
         Catch ex As Exception
             objconnectionautohrdwLoop.Close()
-            StartLog("Get_Source_Target " & SourceDocument, ex.Message, 0)
+
+            etlTimer.Stop()
+
+            Dim totalTime As String = etlTimer.Elapsed.ToString("hh\:mm\:ss")
+
+            StartLog("ETL_RUNTIME_ERROR", "Runtime: " & totalTime & vbCrLf & ex.Message, 0)
+
+            Return
+
+            'StartLog("Get_Source_Target " & SourceDocument, ex.Message, 0)
             ' End
         End Try
     End Sub
@@ -139,7 +255,8 @@ Public Class frmmain
                     StartLog("Extract_Data_From_MongoDB", SDocument & vbCrLf & ex.Message, 0)
                 End Try
             Loop
-            Delete_Table_By_Reference(TTable, dt.Rows.Item(0).Item("_id"))
+            Delete_Recursive(TTable, dt.Rows.Item(0).Item("_id")) ' Delete 
+            'Delete_Table_By_Reference(TTable, dt.Rows.Item(0).Item("_id"))
             'Delete_Detail_Table_By_ReferenceID(TTable, dt.Rows.Item(0).Item("_id"))
             Process_Data_Transfer(TTable, dt)
             dt.Rows.Clear()
@@ -159,12 +276,12 @@ Public Class frmmain
         Dim rawjson = bsonfile
         Dim separatingChars As String() = {"}, {"}
         Dim docs As String() = rawjson.Split(separatingChars, System.StringSplitOptions.RemoveEmptyEntries)
-        TextBox2.Text = ""
+        ' TextBox2.Text = ""
         Try
             For Each doc As String In docs
                 doccount = doccount + 1
                 Try
-                    TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse("{" & doc.TrimEnd("}").TrimStart("{") & "}").ToString
+                    'TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse("{" & doc.TrimEnd("}").TrimStart("{") & "}").ToString
                     Dim list = BsonDocument.Parse("{" & doc.TrimEnd("}").TrimStart("{") & "}").ToList
                     'TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse(doc).ToString
                     'Dim list = BsonDocument.Parse(doc).ToList
@@ -186,7 +303,7 @@ Public Class frmmain
                     Loop
                 Catch ex As Exception
                     doc = doc.Replace("} }", "}")
-                    TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse("{" & doc & "}").ToString
+                    ' TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse("{" & doc & "}").ToString
                     Dim List = BsonDocument.Parse("{" & doc & "}").ToList
                     dt.Rows.Add()
                     vcnt = 0
@@ -210,7 +327,7 @@ Public Class frmmain
                 dt.Columns.Clear()
             Next
         Catch ex As Exception
-            StartLog(TargetTable, RefID & ex.Message & TextBox1.Text, 0)
+            StartLog(TargetTable, RefID & ex.Message, 0)
         End Try
     End Sub
     Public Sub Delete_Table_By_Reference(TargetTable As String, TableReferenceID As String)
@@ -251,6 +368,61 @@ Public Class frmmain
         Catch ex As Exception
             objconnectionautohrdw.Close()
             StartLog("Delete_Detail_Table_By_ReferenceID", "Delete_Detail_Table_By_ReferenceID" & vbCrLf & ex.Message, 0)
+        End Try
+    End Sub
+
+
+    Public Sub Delete_Recursive(MainTable As String, ReferenceID As String)
+        Dim dtChild As New DataTable
+
+        Try
+            ' Get child tables of this parent
+            If objconnectionautohrdw.State = ConnectionState.Open Then
+                objconnectionautohrdw.Close()
+            End If
+
+            objconnectionautohrdw.Open()
+
+            SQLCommand = New SqlClient.SqlCommand("sproc_get_main_detail_table", objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.StoredProcedure
+            SQLCommand.Parameters.Clear()
+            SQLCommand.Parameters.AddWithValue("@Main_Table", MainTable)
+
+            SQLReader = SQLCommand.ExecuteReader()
+            dtChild.Load(SQLReader)
+            objconnectionautohrdw.Close()
+
+            ' LOOP child tables
+            For Each row As DataRow In dtChild.Rows
+
+                Dim childTable As String = row("Detail_Table").ToString()
+
+                '  RECURSION: delete deeper levels first
+                Delete_Recursive(childTable, ReferenceID)
+
+                ' DELETE child records
+                Dim query As String = "DELETE FROM " & childTable & " WHERE reference_id = @refid"
+
+                objconnectionautohrdw.Open()
+                Dim cmd As New SqlClient.SqlCommand(query, objconnectionautohrdw)
+                cmd.Parameters.AddWithValue("@refid", ReferenceID)
+                cmd.ExecuteNonQuery()
+                objconnectionautohrdw.Close()
+
+            Next
+
+            '  delete parent
+            Dim parentQuery As String = "DELETE FROM " & MainTable & " WHERE _id = @refid"
+
+            objconnectionautohrdw.Open()
+            Dim parentCmd As New SqlClient.SqlCommand(parentQuery, objconnectionautohrdw)
+            parentCmd.Parameters.AddWithValue("@refid", ReferenceID)
+            parentCmd.ExecuteNonQuery()
+            objconnectionautohrdw.Close()
+
+        Catch ex As Exception
+            If objconnectionautohrdw.State = ConnectionState.Open Then objconnectionautohrdw.Close()
+            StartLog("Delete_Recursive", MainTable & vbCrLf & ex.Message, 0)
         End Try
     End Sub
     Public Sub Process_Data_Transfer(sourcetablename As String, sourcetable As DataTable)
@@ -425,6 +597,28 @@ Public Class frmmain
             End If
             StartLog(tableName, columnstr & vbCrLf & ex.Message & vbCrLf & "Array_Bulk_Insert Error", 0)
             'FileLogger.WriteLog($"Error during Array_Bulk_Insert for {tableName}: {ex.Message}")
+        End Try
+    End Sub
+
+    ' Loading view_prescription to Tbl_prescription
+    Public Sub load_prescription()
+
+        ' StartLog("LOADING PRESCRIPTION", "START", 0)
+
+        Try
+            StartLog("LOADING PRESCRIPTION", "START", 0)
+            If objconnectionautohrdw.State = ConnectionState.Open Then objconnectionautohrdw.Close()
+            objconnectionautohrdw.Open()
+
+            SQLCommand = New SqlClient.SqlCommand("sp_load_prescription", objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.StoredProcedure
+            SQLCommand.ExecuteNonQuery()
+
+            StartLog("LOADING PRESCRIPTION", "FINISH", 1)
+
+        Catch ex As Exception
+            objconnectionautohrdw.Close()
+            StartLog("Loading view to table", ex.Message, 0)
         End Try
     End Sub
     Public Function StartLog(Sdocument As String, TTable As String, SDocCount As Integer)
