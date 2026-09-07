@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TextBox1.Text" xml:space="preserve">
+    <value>[{ "daysofweek" : [], "checklists" : [], "todaysdosages" : [], "nextdaydosages" : [], "noofcopies" : [], "rhsubgrpuids" : [], "notifydepartmentuids" : [], "diettherapeuticid" : [], "treatmenttoothnumbers" : [], "_id" : ObjectId("656593785e0c9e776a1cf08b"), "slidingscaledetails" : { "rangedetails" : [] }, "specimendiscarddetails" : { "auditlogs" : [] }, "orderitemuid" : ObjectId("63eb18af0c0adac51a7e89c5"), "orderitemname" : "Low Salt diet", "billingtype" : "ON RAISING", "ordercattype" : "DIET", "startdate" : ISODate("2023-11-28T07:15:04.098Z"), "enddate" : ISODate("2023-11-28T15:59:59.999Z"), "duration" : 1, "isactive" : true, "statusuid" : ObjectId("579b0bcbf3fd3fa90b83e32c"), "careprovideruid" : ObjectId("6304e7d17cc3214c8859092b"), "quantity" : 1, "unitprice" : 150, "totalprice" : 150, "frequencyuid" : null, "quantityUOM" : null, "instructions" : [{ "_id" : ObjectId("6406a216bb89291152d33e74"), "instructiontypeuid" : ObjectId("5f7beab391e9464d27fae7f4"), "valuecode" : "INSTYP3", "instructionuid" : ObjectId("5f7beab991e9464d27faf92c"), "instructiontext" : "exc ins", "isprint" : false }, { "_id" : ObjectId("6406a216bb89291152d33e75"), "instructiontypeuid" : ObjectId("5f7beab391e9464d27fae7f6"), "valuecode" : "INSTYP4", "instructionuid" : ObjectId("5f7beab991e9464d27faf92e"), "instructiontext" : "nrs ins", "isprint" : false }, { "_id" : ObjectId("6406a216bb89291152d33e76"), "instructiontypeuid" : ObjectId("5f7beab391e9464d27fae7f8"), "valuecode" : "INSTYP2", "instructionuid" : ObjectId("5f7beab991e9464d27faf92c"), "instructiontext" : "Ord ins", "isprint" : false }, { "_id" : ObjectId("6406a216bb89291152d33e77"), "instructiontypeuid" : ObjectId("5f7beab391e9464d27fae7fa"), "valuecode" : "INSTYP1", "instructionuid" : ObjectId("5f7beab991e9464d27faf92c"), "instructiontext" : "pt ins", "isprint" : false }], "iscontinuousorder" : false, "parentorderuid" : ObjectId("6406a216bb89291152d33e6f"), "parentorderitemuid" : ObjectId("6406a216bb89291152d33e73"), "patientvisitpayoruid" : ObjectId("63eb99d40863d9517a8a6599"), "payordiscount" : 0, "tariffuid" : ObjectId("63feb9c8d45c0d09741f74e8"), "priorityuid" : ObjectId("5f7beab991e9464d27faf932"), "isexecutable" : true, "infusionduration" : null, "infusionrate" : null, "infusiondurationuom" : null, "infusionrateuom" : null, "associateddiagnosisdetailuid" : ObjectId("6406a17108e96e11653cf779"), "associatedproblemuid" : ObjectId("6076714e1ba08e7f61b3fddc"), "overridefreqtimings" : [], "formuladiet" : false, "isnokdiet" : false, "feederrequired" : false, "isfasting" : false, "additiveitems" : [], "separateditems" : [], "dosagefrequency" : [], "additionalinfusion" : [], "taperingdetails" : [], "patientorderlogs" : [{ "_id" : ObjectId("656593785e0c9e776a1cf099"), "useruid" : ObjectId("65407df2dc8a9d530959daad"), "departmentuid" : ObjectId("5f7c366491e9464d27fb3dad"), "statusuid" : ObjectId("579b0bcbf3fd3fa90b83e32c"), "modifiedat" : ISODate("2023-11-28T07:15:04.113Z") }], "patientorderalerts" : [], "hourlychargeordertimings" : [], "medreviewcareproviders" : [], "pharmacytasks" : [], "dispensebatchdetail" : [], "assigneduserlogs" : [], "transferredorderlogs" : [], "nurseviewlog" : [], "titrations" : [], "orgorderitemuid" : ObjectId("63eb18af0c0adac51a7e89c5"), "uniqrefno" : null, "ordergroupuid" : null, "patientorderitemdetailsuid" : null, "createdAt" : ISODate("2023-11-28T07:15:04.117Z"), "updatedAt" : ISODate("2023-11-28T07:15:04.117Z") }]</value>
+  </data>
+  <data name="TextBox2.Text" xml:space="preserve">
+    <value>{ "slidingscaledetails" : { "rangedetails" : "" }, "specimendiscarddetails" : { "auditlogs" : "" }, "daysofweek" : "", "checklists" : "", "todaysdosages" : "", "nextdaydosages" : "", "noofcopies" : "", "rhsubgrpuids" : "", "notifydepartmentuids" : "", "diettherapeuticid" : "", "treatmenttoothnumbers" : "", "_id" : "6530aea41183ae3aa3344114", "orderitemuid" : "650cbd6b079b91cb962cbf50", "iscontinuousorder" : false, "broughtfromoutside" : false, "ordercattype" : "RADIOLOGY", "isacknowledgementmandatory" : false, "isdoctorshareitem" : true, "uniqrefno" : 1697689239, "ordergroupuid" : null, "ordercatuid" : "650a829c15855b6571c15e17", "ordersubcatuid" : "650a829c15855b6571c15e52", "billingtype" : "ON RAISING", "isnonclinicalorder" : true, "orderitemname" : "BREAST OR SONOMAMMOGRAM", "startdate" : "2023-10-19T04:18:38.019Z", "enddate" : "2023-10-20T04:18:00Z", "statusuid" : "579b0bcbf3fd3fa90b83e32c", "isactive" : true, "maxqty" : 1, "quantity" : 1, "duration" : 1, "durationuom" : "5f7beab291e9464d27fae544", "isexecutable" : false, "isapprovalrequired" : false, "antibioticapprovalrequired" : false, "iscosignrequired" : false, "isnursecosignrequired" : false, "ishourlycharge" : false, "infusionrate" : null, "infusionrateuom" : null, "infusionduration" : null, "infusiondurationuom" : null, "priorityuid" : "5f7beab991e9464d27faf932", "isoutlab" : false, "departmentnotification" : false, "associateddiagnosisdetailuid" : null, "isexcludeprebilling" : false, "istaperingdose" : false, "noofexposures" : 1, "istitration" : false, "unitprice" : 2726, "payordiscount" : 0, "copayamount" : 0, "isotcsale" : false, "patientvisitpayoruid" : "6530ae1d1183ae3aa3343f73", "ispriceoverwritten" : false, "unitpayordiscount" : 0, "specialdiscount" : 0, "billinggroupuid" : "650c923ee978f0b6802dd513", "billingsubgroupuid" : "650c932ce978f0b6802e0665", "taxmasteruid" : null, "isexclusive" : null, "taxpercentage" : null, "taxamount" : 0, "iscopayexcluded" : false, "chargecode" : "ULT00018", "tariffuid" : "6510094ac368390bd24e5391", "totalprice" : 2726, "iscrossmatchrequired" : false, "careprovideruid" : "65103ecae37ea0f56385bae4", "externalpatientorderitems" : { "_id" : "6530aea41183ae3aa3344115", "dontreplaceorsubstitute" : false, "increasedcost" : false }, "sameorderlinknumber" : "9590", "taxondoctorgst" : false, "doctorfeetax" : null, "isneedadditionalapprove" : false, "isfromorderbilling" : true, "accessionnumber" : "RO23000384", "patientorderlogs" : { "_id" : "6530aea41183ae3aa3344116", "useruid" : "65103eb4e37ea0f56385413b", "departmentuid" : "650d39c20a106cd5d7fefc6d", "statusuid" : "579b0bcbf3fd3fa90b83e32c", "modifiedat" : "2023-10-19T04:20:52.238Z", "comments" : null }, "orgorderitemuid" : "650cbd6b079b91cb962cbf50", "dosagefrequency" : "", "instructions" : "", "additionalinfusion" : "", "taperingdetails" : "", "patientorderalerts" : "", "overridefreqtimings" : "", "hourlychargeordertimings" : "", "medreviewcareproviders" : "", "pharmacytasks" : "", "dispensebatchdetail" : "", "assigneduserlogs" : "", "transferredorderlogs" : "", "nurseviewlog" : "", "additiveitems" : "", "separateditems" : "", "titrations" : "" }</value>
+  </data>
+</root>

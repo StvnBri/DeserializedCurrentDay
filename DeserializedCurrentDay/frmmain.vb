@@ -1,0 +1,491 @@
+﻿Imports MongoDB.Bson
+Imports MongoDB.Driver
+Imports Newtonsoft
+Imports Newtonsoft.Json
+Imports Newtonsoft.Json.Linq
+Imports System.Data
+Imports System.Text.RegularExpressions
+Imports System.Dynamic
+Imports System.IO
+Imports MongoDB.Bson.IO
+Imports MongoDB.Bson.Serialization
+Imports System.Text
+
+
+Public Class frmmain
+
+    Public connectionStringHRDW = Configuration.ConfigurationSettings.AppSettings("connectionStringDW")
+
+    Public objconnectionautohrdwLoop As New Data.SqlClient.SqlConnection(connectionStringHRDW)
+    Public SQLCommandLoop As Data.SqlClient.SqlCommand
+    Public SQLReaderLoop As Data.SqlClient.SqlDataReader
+
+    Public objconnectionautohrdw As New Data.SqlClient.SqlConnection(connectionStringHRDW)
+    Public SQLCommand As Data.SqlClient.SqlCommand
+    Public SQLReader As Data.SqlClient.SqlDataReader
+
+    Public objconnectionautohrdwError As New Data.SqlClient.SqlConnection(connectionStringHRDW)
+    Public SQLCommandError As Data.SqlClient.SqlCommand
+
+    Dim _client As IMongoClient
+    Dim _db As IMongoDatabase
+    Dim dt As New DataTable
+    Dim dtval As New DataTable
+    Dim ds As New BindingSource
+    Public DestinationTable As String
+    Public dttablejson As New DataTable
+
+    Public MongoDBConnectionString As String
+    Public SourceDocument As String
+    Public TargetTable As String
+    Public querystring As String
+    Public Lockid As Integer
+    Public FilterField As String
+    Public FilterField2 As String
+    Public FilterField3 As String
+    Dim customdate As Date
+
+    Private Sub frmmain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+
+
+        Get_MongDB_Credentials()
+        Get_Source_Target()
+        End
+
+    End Sub
+
+    Public Sub Get_MongDB_Credentials()
+
+        objconnectionautohrdw.Open()
+        SQLCommand = New Data.SqlClient.SqlCommand("sproc_get_arcusair_uat_credentials", objconnectionautohrdw)
+        SQLCommand.CommandType = CommandType.StoredProcedure
+        SQLReader = SQLCommand.ExecuteReader(Data.CommandBehavior.CloseConnection)
+
+        If SQLReader.Read Then
+            MongoDBConnectionString = SQLReader("AAConnectionString")
+        Else
+            MsgBox("Credentials Not Found")
+            End
+        End If
+        objconnectionautohrdw.Close()
+
+    End Sub
+
+    Public Sub Get_Source_Target()
+
+        Try
+
+            'customdate = InputBox("enterdate mm/dd/yyyy")
+            customdate = Now.AddDays(-1).ToShortDateString
+            'customdate = Now.ToShortDateString
+            objconnectionautohrdwLoop.Open()
+            SQLCommandLoop = New Data.SqlClient.SqlCommand("sproc_get_ArcusAir_Reference_Target_Transactional_CurrentDay", objconnectionautohrdwLoop)
+            SQLCommandLoop.CommandType = CommandType.StoredProcedure
+            SQLReaderLoop = SQLCommandLoop.ExecuteReader(Data.CommandBehavior.CloseConnection)
+
+
+            Do While SQLReaderLoop.Read
+
+                SourceDocument = SQLReaderLoop("Source_Collection")
+                TargetTable = SQLReaderLoop("Target_Table")
+                FilterField = SQLReaderLoop("Filter")
+                Try
+                    FilterField2 = SQLReader("Filter2")
+                Catch ex As Exception
+                    FilterField2 = ""
+                End Try
+
+                Try
+                    FilterField3 = SQLReader("Filter3") & ""
+                Catch ex As Exception
+                    FilterField3 = ""
+                End Try
+
+
+                Clear_Destination(TargetTable, FilterField)
+                Extract_Data_From_MongoDB(MongoDBConnectionString, SourceDocument, TargetTable, FilterField)
+
+                If FilterField2.Length > 0 Then
+                    Extract_Data_From_MongoDB(MongoDBConnectionString, SourceDocument, TargetTable, FilterField2)
+                End If
+
+                If FilterField3.Length > 0 Then
+                    Extract_Data_From_MongoDB(MongoDBConnectionString, SourceDocument, TargetTable, FilterField3)
+                End If
+
+            Loop
+
+            objconnectionautohrdwLoop.Close()
+
+
+
+        Catch ex As Exception
+
+            objconnectionautohrdwLoop.Close()
+            StartLog("Get_Source_Target " & SourceDocument, ex.Message, 0)
+            '  End
+        End Try
+    End Sub
+
+    Public Sub Clear_Destination(ReferenceTbl As String, RefField As String)
+
+        Try
+
+
+            'querystring = "Delete From " & ReferenceTbl & "  where CONVERT(date, " & RefField & ") = '" & Now.ToShortDateString & "'"
+            querystring = "Delete From " & ReferenceTbl & "  where CONVERT(date, " & RefField & ") = '" & customdate & "'"
+
+            objconnectionautohrdw.Open()
+            SQLCommand = New Data.SqlClient.SqlCommand(querystring, objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.Text
+            SQLCommand.ExecuteNonQuery()
+            objconnectionautohrdw.Close()
+
+        Catch ex As Exception
+            objconnectionautohrdw.Close()
+            StartLog("Clear_Destination", ex.Message, 0)
+        End Try
+    End Sub
+
+    Public Sub Extract_Data_From_MongoDB(mongodbstr As String, SDocument As String, TTable As String, Filter As String)
+
+        Dim lcnt As Integer
+        Dim vcnt As Integer
+        Dim dt As New DataTable
+        Dim tempstr As String = ""
+        Dim dr As DataRow
+
+        Dim mongo As MongoClient = New MongoClient(mongodbstr)
+        Dim db = mongo.GetDatabase("arcusairdb")
+        Dim collection = db.GetCollection(Of BsonDocument)(SDocument)
+        Dim q = New BsonDocument()
+
+        'Dim startDate As DateTime = New DateTime(Now.Year, Now.Month, Now.Day) ' 
+        Dim startDate As DateTime = New DateTime(customdate.Year, customdate.Month, customdate.Day)
+        Dim f = Builders(Of BsonDocument).Filter.And(Builders(Of BsonDocument).Filter.Gte(Of Date)(Filter, startDate))
+
+        Dim list = collection.Find(f).ToList
+
+
+        StartLog(SDocument, TTable, list.Count)
+
+        Do Until lcnt = list.Count
+
+            dt.Rows.Add()
+            vcnt = 0
+
+            Do Until vcnt = list.Item(lcnt).Values.Count
+
+                Try
+
+                    vcnt = vcnt + 1
+                    dt.Columns.Add(list.Item(lcnt).ElementAt(vcnt - 1).Name.ToString, GetType(String))
+                    dt.Rows(0)(list.Item(lcnt).ElementAt(vcnt - 1).Name.ToString) = list.Item(lcnt).Values(vcnt - 1).ToString
+
+                Catch ex As Exception
+                    StartLog("Extract_Data_From_MongoDB", SDocument & vbCrLf & ex.Message, 0)
+                End Try
+
+            Loop
+
+
+
+            Delete_Table_By_Reference(TTable, dt.Rows.Item(0).Item("_id"))
+
+            Delete_Detail_Table_By_ReferenceID(TTable, dt.Rows.Item(0).Item("_id"))
+
+            Process_Data_Transfer(TTable, dt)
+
+            dt.Rows.Clear()
+            dt.Columns.Clear()
+            lcnt = lcnt + 1
+
+
+        Loop
+
+        EndLog(Lockid, vcnt)
+
+    End Sub
+
+    Public Sub LoadBsonDetail(RefID As String, bsonfile As String, TargetTable As String)
+
+        Dim lcnt As Integer
+        Dim vcnt As Integer
+        Dim dt As New DataTable
+        Dim ds As New BindingSource
+        Dim tempstr As String = ""
+        Dim dr As DataRow
+        Dim doccount As Integer
+
+        Dim rawjson = bsonfile
+        Dim separatingChars As String() = {"}, {"}
+        Dim docs As String() = rawjson.Split(separatingChars, System.StringSplitOptions.RemoveEmptyEntries)
+        TextBox2.Text = ""
+        Try
+
+
+            For Each doc As String In docs
+                doccount = doccount + 1
+
+                Try
+                    TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse("{" & doc.TrimEnd("}").TrimStart("{") & "}").ToString
+                    Dim list = BsonDocument.Parse("{" & doc.TrimEnd("}").TrimStart("{") & "}").ToList
+
+                    'TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse(doc).ToString
+                    'Dim list = BsonDocument.Parse(doc).ToList
+
+                    dt.Rows.Add()
+                    vcnt = 0
+                    dt.Columns.Add("ReferenceID", GetType(String))
+                    dt.Rows(0)("ReferenceID") = RefID
+
+                    Do Until vcnt = list.Count
+                        Try
+                            vcnt = vcnt + 1
+                            dt.Columns.Add(list.ElementAt(vcnt - 1).Name.ToString(), GetType(String))
+                            dt.Rows(0)(list.ElementAt(vcnt - 1).Name.ToString()) = list.Item(vcnt - 1).Value.ToString
+                        Catch ex2 As Exception
+                            MsgBox(ex2.Message)
+                        End Try
+                    Loop
+
+                Catch ex As Exception
+
+                    doc = doc.Replace("} }", "}")
+                    TextBox2.Text = TextBox2.Text & vbCrLf & BsonDocument.Parse("{" & doc & "}").ToString
+                    Dim List = BsonDocument.Parse("{" & doc & "}").ToList
+
+                    dt.Rows.Add()
+                    vcnt = 0
+                    dt.Columns.Add("ReferenceID", GetType(String))
+                    dt.Rows(0)("ReferenceID") = RefID
+
+                    Do Until vcnt = List.Count
+                        Try
+                            vcnt = vcnt + 1
+                            dt.Columns.Add(List.ElementAt(vcnt - 1).Name.ToString(), GetType(String))
+                            dt.Rows(0)(List.ElementAt(vcnt - 1).Name.ToString()) = List.Item(vcnt - 1).Value.ToString
+                        Catch ex3 As Exception
+                            MsgBox(ex3.Message)
+                        End Try
+                    Loop
+
+                End Try
+
+                Process_Data_Transfer(TargetTable, dt)
+                dt.Rows.Clear()
+                dt.Columns.Clear()
+
+            Next
+        Catch ex As Exception
+            StartLog(TargetTable, RefID & ex.Message & TextBox1.Text, 0)
+        End Try
+    End Sub
+
+    Public Sub Delete_Table_By_Reference(TargetTable As String, TableReferenceID As String)
+
+
+        Try
+
+            querystring = "Delete From " & TargetTable & "  where _id = '" & TableReferenceID & "'"
+            objconnectionautohrdw.Open()
+            SQLCommand = New Data.SqlClient.SqlCommand(querystring, objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.Text
+            SQLCommand.ExecuteNonQuery()
+            objconnectionautohrdw.Close()
+
+        Catch ex As Exception
+            objconnectionautohrdw.Close()
+            StartLog("Delete_Table_By_Reference", ex.Message, 0)
+        End Try
+
+
+    End Sub
+
+    Public Sub Delete_Detail_Table_By_ReferenceID(TargetTable As String, TableReferenceID As String)
+
+        Dim dtdetailtable As New DataTable
+        Dim detailcount As Integer = 0
+
+        Try
+
+            dtdetailtable.Clear()
+            objconnectionautohrdw.Open()
+            SQLCommand = New Data.SqlClient.SqlCommand("sproc_get_main_detail_table", objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.StoredProcedure
+            SQLCommand.Parameters.Add("@Main_Table", SqlDbType.NVarChar, 50, "@Main_Table")
+            SQLCommand.Parameters("@Main_Table").Value = TargetTable
+            SQLReader = SQLCommand.ExecuteReader(Data.CommandBehavior.CloseConnection)
+            dtdetailtable.Load(SQLReader)
+            objconnectionautohrdw.Close()
+
+            Do Until dtdetailtable.Rows.Count = detailcount
+
+                querystring = "Delete From " & dtdetailtable.Rows(detailcount)(1).ToString & "  where ReferenceID = '" & TableReferenceID & "'"
+                objconnectionautohrdw.Open()
+                SQLCommand = New Data.SqlClient.SqlCommand(querystring, objconnectionautohrdw)
+                SQLCommand.CommandType = CommandType.Text
+                SQLCommand.ExecuteNonQuery()
+                objconnectionautohrdw.Close()
+                detailcount = detailcount + 1
+            Loop
+
+        Catch ex As Exception
+            objconnectionautohrdw.Close()
+            StartLog("Delete_Detail_Table_By_ReferenceID", "Delete_Detail_Table_By_ReferenceID" & vbCrLf & ex.Message, 0)
+        End Try
+
+    End Sub
+
+    Public Sub Process_Data_Transfer(sourcetablename As String, sourcetable As DataTable)
+
+        Dim columnstr As String
+
+        Try
+
+            objconnectionautohrdw.Open()
+            Using SQLBulkCopy As SqlClient.SqlBulkCopy = New SqlClient.SqlBulkCopy(objconnectionautohrdw)
+
+                For Each c As DataColumn In sourcetable.Columns
+                    SQLBulkCopy.ColumnMappings.Add(c.ColumnName, c.ColumnName)
+                    columnstr = columnstr & "," & c.ColumnName
+                Next
+                SQLBulkCopy.DestinationTableName = sourcetablename
+                SQLBulkCopy.WriteToServer(sourcetable.CreateDataReader)
+            End Using
+            objconnectionautohrdw.Close()
+
+        Catch ex As Exception
+
+            objconnectionautohrdw.Close()
+            '  MsgBox(ex.Message)
+            StartLog(sourcetablename, "Process_Data_Transfer " & columnstr & vbCrLf & ex.Message, 0)
+
+            'End
+        End Try
+
+
+    End Sub
+
+    Public Function StartLog(Sdocument As String, TTable As String, SDocCount As Integer)
+
+        Try
+
+            objconnectionautohrdw.Open()
+            SQLCommand = New Data.SqlClient.SqlCommand("sproc_save_logs", objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.StoredProcedure
+            SQLCommand.Parameters.Add("@Reference", SqlDbType.NVarChar, 50, "@Reference")
+            SQLCommand.Parameters("@Reference").Value = Sdocument
+            SQLCommand.Parameters.Add("@Destination", SqlDbType.NVarChar, 4000, "@Destination")
+            SQLCommand.Parameters("@Destination").Value = TTable
+            SQLCommand.Parameters.Add("@ReferenceDocumentCount", SqlDbType.Int, 4, "@ReferenceDocumentCount")
+            SQLCommand.Parameters("@ReferenceDocumentCount").Value = SDocCount
+            SQLReader = SQLCommand.ExecuteReader(Data.CommandBehavior.CloseConnection)
+
+            If SQLReader.Read Then
+                Lockid = SQLReader("LockID")
+            End If
+
+            objconnectionautohrdw.Close()
+
+        Catch ex As Exception
+            objconnectionautohrdw.Close()
+        End Try
+
+    End Function
+
+    Public Sub EndLog(lckid As Integer, DescCount As Integer)
+
+        Try
+            objconnectionautohrdw.Open()
+            SQLCommand = New Data.SqlClient.SqlCommand("sproc_save_endlogs", objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.StoredProcedure
+            SQLCommand.Parameters.Add("@DestinationRowsCount", SqlDbType.Int, 4, "@DestinationRowsCount")
+            SQLCommand.Parameters("@DestinationRowsCount").Value = lckid
+            SQLCommand.Parameters.Add("@LockID", SqlDbType.Int, 4, "@LockID")
+            SQLCommand.Parameters("@LockID").Value = DescCount
+            SQLCommand.ExecuteNonQuery()
+            objconnectionautohrdw.Close()
+        Catch ex As Exception
+            objconnectionautohrdw.Close()
+        End Try
+    End Sub
+
+    Public Function Get_Detail_Table_Fields(TargetDetailedTable As String)
+
+        Dim retval = New List(Of String)
+
+
+        '
+        Try
+
+            objconnectionautohrdw.Open()
+            SQLCommand = New Data.SqlClient.SqlCommand("sproc_get_table_details_fields", objconnectionautohrdw)
+            SQLCommand.CommandType = CommandType.StoredProcedure
+            SQLCommand.Parameters.Add("@Target_Table", SqlDbType.NVarChar, 50, "@Target_Table")
+            SQLCommand.Parameters("@Target_Table").Value = TargetDetailedTable
+            SQLReader = SQLCommand.ExecuteReader(Data.CommandBehavior.CloseConnection)
+
+            While SQLReader.Read
+
+                retval.Add(SQLReader("FieldName"))
+
+
+            End While
+            objconnectionautohrdw.Close()
+
+        Catch ex As Exception
+            ' MsgBox(ex.Message)
+            objconnectionautohrdw.Close()
+        End Try
+
+
+
+        Return retval
+
+    End Function
+
+    Public Sub Desrialized_Json(jsonfile As String, refid As String, TargetTable As String)
+
+        Try
+            Dim ResultTable As DataTable = Newtonsoft.Json.JsonConvert.DeserializeObject(Of DataTable)(jsonfile)
+            Dim newColumn As New Data.DataColumn("ReferenceID", GetType(System.String))
+            newColumn.DefaultValue = refid
+            ResultTable.Columns.Add(newColumn)
+            ' ResultTable.Columns.Add("ReferenceID", GetType(String))
+            ' ResultTable.Rows(0)("ReferenceID") = refid
+            Process_Data_Transfer(TargetTable, ResultTable)
+        Catch ex As Exception
+            ' MsgBox((ex.Message))
+            StartLog(TargetTable, refid & vbCrLf & ex.Message & vbCrLf & jsonfile, 0)
+        End Try
+
+
+    End Sub
+
+    Public Function ToJson(ByVal bson As BsonDocument) As String
+        Using stream = New MemoryStream()
+
+            Using writer = New BsonBinaryWriter(stream)
+                BsonSerializer.Serialize(writer, GetType(BsonDocument), bson)
+            End Using
+
+            stream.Seek(0, SeekOrigin.Begin)
+
+            Using reader = New Newtonsoft.Json.Bson.BsonReader(stream)
+                Dim sb = New StringBuilder()
+                Dim sw = New StringWriter(sb)
+
+                Using jWriter = New JsonTextWriter(sw)
+                    jWriter.DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                    jWriter.WriteToken(reader)
+                End Using
+
+                Return sb.ToString()
+            End Using
+        End Using
+    End Function
+
+
+End Class
